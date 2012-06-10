@@ -1,0 +1,69 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <assert.h>
+#include <unistd.h>
+#define NUM_THREADS 1
+
+struct SplitSet {
+  int thread_id;
+  int *set;
+  int size;
+};
+
+struct SplitSet thread_data_array[NUM_THREADS];
+
+void *p(void *vptr_value) {
+  int size,sum;
+  sum = 0;
+
+  struct SplitSet *mySet;
+
+  mySet = (struct SplitSet *) vptr_value;
+  size = mySet->size;
+  int *setValues = (int *)mySet->set;
+
+  printf("Size: %d \n", size);
+  for (int count = 0; count<size; count++) {
+    printf("Value: %d \n", setValues[count]);
+    sum+=setValues[count];
+  }
+
+  printf("Sum: %d \n",sum);
+  return (void *) sum;
+}
+
+int main(int argc,char *argv[]) { //X Y interleaving is unpredictable
+  pthread_t x;      void *r;     int i;
+  int sum,rc;
+
+  int *firstSet = new int[argc-1];
+
+
+  for(int i=0;i<argc-1;i++) {
+    firstSet[i]=atoi(argv[i+1]);
+    printf("Value in main: %d \n", atoi(argv[i+1]));
+  }
+
+  thread_data_array[1].set = firstSet;
+  thread_data_array[1].size = argc-1;
+  thread_data_array[1].thread_id = 1;
+
+  
+  rc = pthread_create(&x, NULL, p, (void *) &thread_data_array[1]);
+  /**
+  if(rc) {
+    printf("ERR: pthread_create() ret = %d\n",rc);
+    exit(-1);
+  } **/
+  pthread_join(x,(void**)&sum);
+  printf("Thread return is: %d \n", sum);
+  //pthread_exit(NULL);
+  
+  //assert(pthread_create(&x, NULL, p, &firstSet) == 0);
+  //for (i=0; i<5; i++) { printf("Y\n");  sleep(1); }
+  //pthread_join(x, NULL);
+  //assert(pthread_join(x, &r) == 0);
+  return 0;
+}
+
