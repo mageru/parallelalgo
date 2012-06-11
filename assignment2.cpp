@@ -63,7 +63,7 @@ void *threadVector(void *vptr_value) {
       pthread_mutex_lock (&mutexOutput);
         outputFile << word << endl;
       pthread_mutex_unlock (&mutexOutput);
-      cout << word << endl;
+      //cout << word << endl;
       //uniqCounterArray[lineNumber] = wordLength;
     }
     delete[] wordArray;
@@ -72,8 +72,8 @@ void *threadVector(void *vptr_value) {
   }
   
   
-  cout << "Number of names with unique chars: " << uniqCount << endl;
-  cout << "Processed: " << counter << " Thread: " << threadCounter << endl;
+  //cout << "Number of names with unique chars: " << uniqCount << endl;
+  cout << "Thread: " << threadCounter << " Processed: " << counter << " Unique: " << uniqCount << endl;
   //pthread_exit(NULL);
   return (void *) uniqCount;
 }
@@ -103,7 +103,7 @@ int main() {
   lineCount = file_contents.size()-1;
   splitCount = lineCount / 25;
   remainder = lineCount % 25;
-  cout << "Line count is: " << lineCount << " Split Count: " << splitCount << " Remainder: " << remainder << endl;
+  //cout << "Line count is: " << lineCount << " Split Count: " << splitCount << " Remainder: " << remainder << endl;
 
   int lineCounter = 0;
   int threadCounter = 0;
@@ -117,20 +117,20 @@ int main() {
       sets[i].end = lineCounter + splitCount;
     }
     sets[i].threadCounter = threadCounter;
-    cout << "The iteration is: " << i << endl;
+    //cout << "The iteration is: " << i << endl;
     assert(
       pthread_create(&threads[i], &attr, threadVector, (void *) &sets[i]) == 0);
-    cout << "Start: " << sets[i].start << " End: " << sets[i].end << " Thread: " << threadCounter << endl;
+    //cout << "Start: " << sets[i].start << " End: " << sets[i].end << " Thread: " << threadCounter << endl;
     threadCounter++;
     lineCounter = lineCounter + splitCount + 1;
   }
   
   while (--threadCounter >= 0) {
     int uniqPerThread;
-    cout << "Thread counter: " << threadCounter << endl;
+    //cout << "Thread counter: " << threadCounter << endl;
     assert(pthread_join(threads[threadCounter], (void**)&uniqPerThread) == 0);
     totalUniq += uniqPerThread;
-    cout << "Joining: " << sets[threadCounter].threadCounter << endl;
+    //cout << "Joining: " << sets[threadCounter].threadCounter << endl;
   }
   pthread_mutex_destroy(&mutexOutput);
   outputFile.close();
