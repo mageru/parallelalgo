@@ -1,3 +1,7 @@
+// Justin Miller
+// July 1st 2012
+// Assignment 5 - Concurrent Programming
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,46 +12,50 @@
 #include <pthread.h>
 
 typedef struct {
-  int x,y;
+    int x, y;
 } NumberPair;
 
-const int MAX = 100;
-const int INTERCHANGES = 10;
+const int MAX = 1000;
+const int INTERCHANGES = 100;
 
 int incrementedArray[MAX];
 int verifyArray[MAX];
 
-void *threaded_merge_sort(void *param) {
-    NumberPair range = *(NumberPair *)param, lrange, rrange;
+void *threaded_merge_sort(void *vptr_value) {
+    NumberPair range = *(NumberPair *)vptr_value, lrange, rrange;
     pthread_t lside, rside;
-    int p = range.x, q, r = range.y, n1, n2, n = r-p+1, i, y, k;
+    int lleft, n1, n2, i, y, k;
+    int lright = range.x;
+    int rleft = range.y;
+    int n = rleft - lright + 1;
     int *aleft, *aright;
-    if(p < r) {
-        q = (p + r) >> 1;
-        int id = pthread_self();
-        printf("id: %d p: %d q: %d q+1: %d r: %d\n",id,p,q,(q+1),r);
-        lrange.x = p, lrange.y = q, rrange.x = q + 1, rrange.y = r;
+
+    if (lright < rleft) {
+        lleft = (lright + rleft) >> 1;
+        long id = pthread_self();
+        printf("id: %ld lright: %d lleft: %d rright: %d rleft: %d\n", id, lright, lleft, (lleft + 1), rleft);
+        lrange.x = lright, lrange.y = lleft, rrange.x = lleft + 1, rrange.y = rleft;
         pthread_create(&lside, NULL, threaded_merge_sort, (void *)&lrange);
         pthread_join(lside, NULL);
         pthread_create(&rside, NULL, threaded_merge_sort, (void *)&rrange);
         pthread_join(rside, NULL);
 
-        n1 = q - p + 1;
-        n2 = r - q;
+        n1 = lleft - lright + 1;
+        n2 = rleft - lleft;
         aleft = (int *)malloc(sizeof(int) * n1);
         aright = (int *)malloc(sizeof(int) * n2);
-        for(i = 0; i < n1; i++) {
-          aleft[i] = incrementedArray[p+i];
+        for (i = 0; i < n1; i++) {
+            aleft[i] = incrementedArray[lright + i];
         }
-        for(i = 0; i < n2; i++) {
-          aright[i] = incrementedArray[q+1+i];
+        for (i = 0; i < n2; i++) {
+            aright[i] = incrementedArray[lleft + 1 + i];
         }
-        for(k = i = y = 0; k < n; k++) {
-            if(i >= n1 || (y < n2 && aleft[i] > aright[y])) {
-              incrementedArray[k+p] = aright[y++];
+        for (k = i = y = 0; k < n; k++) {
+            if (i >= n1 || (y < n2 && aleft[i] > aright[y])) {
+                incrementedArray[k + lright] = aright[y++];
             }
             else {
-              incrementedArray[k+p] = aleft[i++];
+                incrementedArray[k + lright] = aleft[i++];
             }
         }
         free(aleft);
@@ -56,55 +64,70 @@ void *threaded_merge_sort(void *param) {
     pthread_exit(NULL);
 }
 
-int main(int argc,char *argv[]) {
-
+int main(int argc, char *argv[]) {
 // Initialize array of numbers 1 to 1,000,000
-for(int i=1;i<MAX+1;i++) {
-  incrementedArray[i]=i;
-  verifyArray[i]=i;
-  printf("Current val: %d\n", i+1);
-}
+    printf("Populating Array of size: %d\n", MAX);
+    for (int i = 0; i < MAX; i += 5) {
+        incrementedArray[i] = i + 1;
+        verifyArray[i] = i + 1;
+        incrementedArray[i + 1] = i + 2;
+        verifyArray[i + 1] = i + 2;
+        incrementedArray[i + 2] = i + 3;
+        verifyArray[i + 2] = i + 3;
+        incrementedArray[i + 3] = i + 4;
+        verifyArray[i + 3] = i + 4;
+        incrementedArray[i + 4] = i + 5;
+        verifyArray[i + 4] = i + 5;
+        //printf("Value: %d to verifyArray location: %d, ",verifyArray[i],i);
+        //printf("Value: %d to verifyArray location: %d, ",verifyArray[i+1],(i+1));
+        //printf("Value: %d to verifyArray location: %d, ",verifyArray[i+2],(i+2));
+        //printf("Value: %d to verifyArray location: %d, ",verifyArray[i+3],(i+3));
+        //printf("Value: %d to verifyArray location: %d, ",verifyArray[i+4],(i+4));
+        printf("Value: %d to incrementedArray location: %d\n, ", incrementedArray[i], i);
+        printf("Value: %d to incrementedArray location: %d\n, ", incrementedArray[i + 1], (i + 1));
+        printf("Value: %d to incrementedArray location: %d\n, ", incrementedArray[i + 2], (i + 2));
+        printf("Value: %d to incrementedArray location: %d\n, ", incrementedArray[i + 3], (i + 3));
+        printf("Value: %d to incrementedArray location: %d\n, ", incrementedArray[i + 4], (i + 4));
+    }
 
 //// Do random interchanges
-for(int x=0;x<INTERCHANGES;x++) {
-  int swapOne = rand() % MAX+1;
-  int swapTwo = rand() % MAX+1;
-  int curSwapOne = incrementedArray[swapOne];
-  incrementedArray[swapOne] = incrementedArray[swapTwo];
-  incrementedArray[swapTwo] = curSwapOne;
-  printf("Array location: %d  Value: %d\n",swapOne,incrementedArray[swapOne]);
-  printf("Array location: %d  Value: %d\n",swapTwo,incrementedArray[swapTwo]);
-  printf("\n");
-}
-int n,i;
-pthread_t sorter;
-NumberPair range;
-//pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-//while(scanf("%d", &n)==1 && n) {
-//for(i = 0; i < n; i++) {
-//  scanf("%d", &incrementedArray[i]);
+    printf("Interchanging %d values in array.\n", INTERCHANGES);
+    for (int x = 0; x < INTERCHANGES; x++) {
+        long swapOne = rand() % MAX;
+        long swapTwo = rand() % MAX;
+        long curSwapOne = incrementedArray[swapOne];
+        incrementedArray[swapOne] = incrementedArray[swapTwo];
+        incrementedArray[swapTwo] = curSwapOne;
+        printf("Array location: %ld  Value: %d\n", swapOne, incrementedArray[swapOne]);
+        printf("Array location: %ld  Value: %d\n", swapTwo, incrementedArray[swapTwo]);
+        printf("\n");
+    }
+//int n,i;
+    pthread_t sorter;
+    NumberPair range;
+    range.x = 1, range.y = MAX - 1;
+    long start = (long)clock();
+    pthread_create(&sorter, NULL, threaded_merge_sort, (void *)&range);
+    pthread_join(sorter, NULL);
+    long runtime = (long)clock - start;
+    bool verified = true;
+    for (int i = 0; i < MAX; i++) {
+        printf("Found: %d Location: %d Expected: %d Location: %d\n", incrementedArray[i], i, verifyArray[i], i);
+        if (incrementedArray[i] != verifyArray[i]) {
+            verified = false;
+            printf("ERROR: Array not in sorted order. \n-- Found: %d at %d. Expected: %d\n", incrementedArray[i], i, verifyArray[i]);
+            exit(-1);
+        }
+    }
+    if (verified) {
+        printf("Number of Elements: %d\n", MAX);
+        printf("Interchanges Made: %d\n", INTERCHANGES);
+        printf("Algorithm: Merge Sort\n");
+        printf("Array sorted = verified. Clock=%ld\n", runtime);
+    }
+    printf("\n");
 //}
-//for(int j=0;j<2;j++){
-range.x = 1, range.y = MAX;
-long start = (long)clock();
-pthread_create(&sorter, NULL, threaded_merge_sort, (void *)&range);
-pthread_join(sorter, NULL);
-long runtime = (long)clock-start;
-bool verified = true;
-for(i = 0; i < MAX; i++) {
-  //printf("%d,", incrementedArray[i]);
-  if(incrementedArray[i] != verifyArray[i]) {
-    verified = false;
-    printf("ERROR: Array not in sorted order. \n-- Found: %d at %d. Expected: %d\n",incrementedArray[i],i,verifyArray[i]);
-    exit(-1);
-  }
-}
-if(verified) {
-  printf("Array sort verified. Clock=%ld\n",runtime);
-}
-printf("\n");
-//}
-return 0;
+    return 0;
 }
 
 
