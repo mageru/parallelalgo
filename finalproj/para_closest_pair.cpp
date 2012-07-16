@@ -3,9 +3,53 @@
 #include <values.h>
 #include <math.h>
 #include <string.h>
+#include <omp.h>
+#include <time.h> //seed
+//#include <iterator> 
+//#include <cmath>
+//#include <algorithm>
+//#include <functional>
+using namespace std;
  
 typedef struct { double x, y; } point_t, *point;
- 
+
+//void sample_qsort(int * begin, int * end)
+//{
+//    if (begin != end) {
+//        --end;  // Exclude last element (pivot) from partition
+//        int * middle = std::partition(begin, end,
+//                          std::bind2nd(std::less<int>(), *end));
+//        using std::swap;
+//        swap(*end, *middle);    // move pivot to middle
+//        #pragma omp task
+//        sample_qsort(begin, middle);
+//        sample_qsort(++middle, ++end); // Exclude pivot and restore end
+//        #pragma omp taskwait
+//    }
+//}
+//
+//void sample_qsort_adaptive(int * begin, int * end, long nthreshold)
+//{
+//    if (begin != end) {
+//        --end;  // Exclude last element (pivot) from partition
+//        int * middle = std::partition(begin, end,
+//                          std::bind2nd(std::less<int>(), *end));
+//        using std::swap;
+//        swap(*end, *middle);    // move pivot to middle
+//
+//        if (end - begin + 1 <= nthreshold) {
+//            sample_qsort_serial(begin, middle);
+//            sample_qsort_serial(++middle, ++end); // Exclude pivot and restore end
+//        } else {
+//            #pragma omp task
+//            sample_qsort_adaptive(begin, middle, nthreshold);
+//            sample_qsort_adaptive(++middle, ++end, nthreshold); // Exclude pivot and restore end
+//            #pragma omp taskwait
+//        }
+//    }
+//}
+
+
 inline double dist(point a, point b)
 {
         double dx = a->x - b->x, dy = a->y - b->y;
@@ -30,6 +74,7 @@ double brute_force(point* pts, int max_n, point *a, point *b)
         int i, j;
         double d, min_d = MAXDOUBLE;
  
+//#pragma omp parallel for
         for (i = 0; i < max_n; i++) {
                 for (j = i + 1; j < max_n; j++) {
                         d = dist(pts[i], pts[j]);
@@ -63,6 +108,7 @@ double closest(point* sx, int nx, point* sy, int ny, point *a, point *b)
                 else                s_yy[--right]= sy[i];
  
         /* reverse the higher part of the list */
+//#pragma omp parallel for
         for (i = ny - 1; right < i; right ++, i--) {
                 a1 = s_yy[right]; s_yy[right] = s_yy[i]; s_yy[i] = a1;
         }
@@ -75,6 +121,7 @@ double closest(point* sx, int nx, point* sy, int ny, point *a, point *b)
  
         /* get all the points within distance d of the center line */
         left = -1; right = ny;
+//#pragma omp parallel for
         for (i = 0; i < ny; i++) {
                 x = sy[i]->x - mid;
                 if (x <= -d || x >= d) continue;
@@ -91,6 +138,7 @@ double closest(point* sx, int nx, point* sy, int ny, point *a, point *b)
                 if (right >= ny) break;
  
                 x1 = s_yy[left]->y - d;
+//#pragma omp parallel for
                 for (i = right; i < ny && s_yy[i]->y > x1; i++)
                         if ((x = dist(s_yy[left], s_yy[i])) < min_d) {
                                 min_d = x;
@@ -106,7 +154,7 @@ double closest(point* sx, int nx, point* sy, int ny, point *a, point *b)
         return min_d;
 }
  
-#define NP 50 
+#define NP 150 
 int main()
 {
         int i;
@@ -115,15 +163,14 @@ int main()
         point pts  = (point_t*)malloc(sizeof(point_t) * NP);
         point* s_x = (point*)malloc(sizeof(point) * NP);
         point* s_y = (point*)malloc(sizeof(point) * NP);
- 
+
+        srand ( (unsigned)time(NULL) );
+#pragma omp parallel for
         for(i = 0; i < NP; i++) {
                 s_x[i] = pts + i;
-                //pts[i].x = 100 * (double) rand()/RAND_MAX;
-                //pts[i].y = 100 * (double) rand()/RAND_MAX;
-                pts[i].x = rand() % (NP * NP);
-                pts[i].y = rand() % (NP * NP - 1);
-                if(pts[i].y >= pts[i].x) ++pts[i].x;
-                //pts[i].y = 100 * (int) rand()/RAND_MAX;
+                pts[i].x = 10000 * (double) rand()/RAND_MAX;
+                pts[i].y = 10000 * (double) rand()/RAND_MAX;
+                printf("Point Generated (%d, %d)\n", (int)pts[i].x,(int)pts[i].y);
         }
  
 /*      printf("brute force: %g, ", sqrt(brute_force(s_x, NP, &a, &b)));
