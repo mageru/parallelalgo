@@ -96,28 +96,25 @@ double brute_force(point* pts, int max_n, point *a, point *b)
         return min_d;
 }
  
-void *closest(void *vptr_value)
+double closest(point* sx, int nx, point* sy, int ny, point *a, point *b)
 {
-        
-        ClosestInput ci = *(ClosestInput *)vptr_value;
-         
         int left, right, i;
         double d, min_d, x0, x1, mid, x;
         point a1, b1;
         point *s_yy;
  
-        if (nx <= 8) return brute_force(ci.sx, ci.nx, ci.a, ci.b);
+        if (nx <= 8) return brute_force(sx, nx, a, b);
  
-        s_yy  = (point*)malloc(sizeof(point) * ci.ny);
-        mid = ci.sx[ci.nx/2]->x;
+        s_yy  = (point*)malloc(sizeof(point) * ny);
+        mid = sx[nx/2]->x;
  
         /* adding points to the y-sorted list; if a point's x is less than mid,
            add to the begining; if more, add to the end backwards, hence the
            need to reverse it */
         left = -1; right = ny;
-        for (i = 0; i < ci.ny; i++)
-                if (ci.sy[i]->x < mid) s_yy[++left] = ci.sy[i];
-                else                s_yy[--right]= ci.sy[i];
+        for (i = 0; i < ny; i++)
+                if (sy[i]->x < mid) s_yy[++left] = sy[i];
+                else                s_yy[--right]= sy[i];
  
         /* reverse the higher part of the list */
 //#pragma omp parallel for
@@ -125,10 +122,7 @@ void *closest(void *vptr_value)
                 a1 = s_yy[right]; s_yy[right] = s_yy[i]; s_yy[i] = a1;
         }
  
-        ClosestInput c1,c2;
-        c1.sx=ci.sx; c1.nx=(ci.nx/2); c1.sy=ci.s_yy; c1.ny = left+1;c1.a=ci.a; c1.b=ci.b;
         min_d = closest(sx, nx/2, s_yy, left + 1, a, b);
-        c2.sx=ci.sx  + ci.nx/2; c2.nx=(ci.nx - ci.nx/2); c2.sy=s_yy + left +1; c2.ny = ci.ny - left -1;c2.a=&a1; c2.b=&b1;
         d = closest(sx + nx/2, nx - nx/2, s_yy + left + 1, ny - left - 1, &a1, &b1);
  
         if (d < min_d) { min_d = d; *a = a1; *b = b1; }
