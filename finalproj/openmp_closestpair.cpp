@@ -3,6 +3,7 @@
 #include <values.h>
 #include <math.h>
 #include <string.h>
+#include <omp.h>
  
 typedef struct { double x, y; } point_t, *point;
  
@@ -24,12 +25,12 @@ int cmp_x(const void *a, const void *b) {
 int cmp_y(const void *a, const void *b) {
         return cmp_dbl( (*((point*)a))->y, (*((point*)b))->y );
 }
- 
+
 double brute_force(point* pts, int max_n, point *a, point *b)
 {
         int i, j;
         double d, min_d = MAXDOUBLE;
- 
+
         for (i = 0; i < max_n; i++) {
                 for (j = i + 1; j < max_n; j++) {
                         d = dist(pts[i], pts[j]);
@@ -68,15 +69,14 @@ double closest(point* sx, int nx, point* sy, int ny, point *a, point *b)
         }
  
         min_d = closest(sx, nx/2, s_yy, left + 1, a, b);
-        printf("value of min_d: %f\n", min_d);
         d = closest(sx + nx/2, nx - nx/2, s_yy + left + 1, ny - left - 1, &a1, &b1);
-        printf("value of d: %f\n", d);
  
         if (d < min_d) { min_d = d; *a = a1; *b = b1; }
         d = sqrt(min_d);
  
         /* get all the points within distance d of the center line */
         left = -1; right = ny;
+#pragma omp parallel for reduction (+:left) reduction (-:right) shared(mid,s_yy,sy) private(x)
         for (i = 0; i < ny; i++) {
                 x = sy[i]->x - mid;
                 if (x <= -d || x >= d) continue;
@@ -118,6 +118,7 @@ int main()
         point* s_x = (point*)malloc(sizeof(point) * NP);
         point* s_y = (point*)malloc(sizeof(point) * NP);
  
+#pragma omp parallel for
         for(i = 0; i < NP; i++) {
                 s_x[i] = pts + i;
                 //pts[i].x = 100 * (double) rand()/RAND_MAX;
@@ -125,6 +126,7 @@ int main()
                 pts[i].x = rand() % (NP * NP);
                 pts[i].y = rand() % (NP * NP - 1);
                 if(pts[i].y >= pts[i].x) ++pts[i].x;
+                printf("Point generated (%f, %f)\n", pts[i].x, pts[i].y);
                 //pts[i].y = 100 * (int) rand()/RAND_MAX;
         }
  
